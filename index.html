@@ -1,0 +1,445 @@
+<title>Days Left</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c2410c">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: single column, hero number per event, add via sheet from bottom */
+:root {
+  --bg: #f5f2ec;
+  --surface: #ffffff;
+  --fg: #1a1613;
+  --muted: #6b645c;
+  --line: #e4ddd2;
+  --accent: #c2410c;
+  --accent-soft: #fef0e6;
+  --danger: #991b1b;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Inter", -apple-system, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16130f;
+    --surface: #221d18;
+    --fg: #f0e9df;
+    --muted: #a39889;
+    --line: #332b22;
+    --accent: #f97316;
+    --accent-soft: #2a1d12;
+    --danger: #f87171;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16130f;
+  --surface: #221d18;
+  --fg: #f0e9df;
+  --muted: #a39889;
+  --line: #332b22;
+  --accent: #f97316;
+  --accent-soft: #2a1d12;
+  --danger: #f87171;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 120px;
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100%;
+}
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.today {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+#list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 20px 18px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 4px 16px;
+  align-items: baseline;
+}
+.card .name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  grid-column: 1;
+  grid-row: 1;
+  word-break: break-word;
+  min-width: 0;
+  padding-right: 8px;
+}
+.card .date {
+  font-size: 13px;
+  color: var(--muted);
+  grid-column: 1;
+  grid-row: 2;
+  font-variant-numeric: tabular-nums;
+}
+.card .big {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  text-align: right;
+}
+.card .label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card.past .big { color: var(--muted); font-size: 42px; }
+.card .remove {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0 4px 12px;
+}
+.card .remove:hover { color: var(--danger); }
+.empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted);
+}
+.empty h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  margin: 0 0 8px;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.empty p { margin: 0; font-size: 14px; }
+.fab-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  padding-top: 12px;
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  z-index: 5;
+}
+.fab {
+  pointer-events: auto;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(194, 65, 12, 0.3);
+}
+.fab:active { transform: scale(0.97); }
+dialog {
+  border: 0;
+  border-radius: 18px 18px 0 0;
+  padding: 0;
+  background: var(--surface);
+  color: var(--fg);
+  width: 100%;
+  max-width: 560px;
+  margin: auto auto 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+}
+dialog::backdrop { background: rgba(0,0,0,0.4); }
+.sheet {
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.sheet h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  margin: 0 0 20px;
+  letter-spacing: -0.01em;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 16px;
+}
+.field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+.sheet-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+}
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn:active { transform: scale(0.98); }
+.err {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  min-height: 1em;
+}
+</style>
+
+<header>
+  <h1 class="title">Days Left</h1>
+  <span class="today" id="today"></span>
+</header>
+
+<div id="list"></div>
+
+<div class="fab-wrap">
+  <button class="fab" id="addBtn">+ New countdown</button>
+</div>
+
+<dialog id="sheet">
+  <form method="dialog" class="sheet" id="form">
+    <h2>New countdown</h2>
+    <div class="field">
+      <label for="eventName">What are you counting to?</label>
+      <input id="eventName" type="text" placeholder="e.g. Semester end" maxlength="60" required>
+    </div>
+    <div class="field">
+      <label for="eventDate">Date</label>
+      <input id="eventDate" type="date" required>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn primary">Add</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const STORAGE_KEY = "days-left:events:v1";
+
+function loadEvents() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function saveEvents(events) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); } catch {}
+}
+
+function startOfDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function daysBetween(targetISO) {
+  const today = startOfDay(new Date());
+  const target = startOfDay(new Date(targetISO + "T00:00:00"));
+  return Math.round((target - today) / 86400000);
+}
+function formatDate(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
+function formatToday() {
+  return new Date().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+let events = loadEvents();
+
+function render() {
+  document.getElementById("today").textContent = "Today · " + formatToday();
+  const list = document.getElementById("list");
+  if (events.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <h2>Nothing on the calendar yet</h2>
+        <p>Add a date and watch the days tick down.</p>
+      </div>`;
+    return;
+  }
+  const sorted = [...events].sort((a, b) => {
+    const da = daysBetween(a.date), db = daysBetween(b.date);
+    const fa = da < 0, fb = db < 0;
+    if (fa !== fb) return fa ? 1 : -1;
+    return da - db;
+  });
+  list.innerHTML = sorted.map(e => {
+    const days = daysBetween(e.date);
+    const past = days < 0;
+    let big, label;
+    if (days === 0) { big = "Today"; label = "The day is here"; }
+    else if (days === 1) { big = "1"; label = "Day to go"; }
+    else if (days > 0) { big = String(days); label = "Days to go"; }
+    else if (days === -1) { big = "1"; label = "Day ago"; }
+    else { big = String(-days); label = "Days ago"; }
+    const bigClass = days === 0 ? 'big" style="font-size:34px' : 'big';
+    return `
+      <div class="card${past ? " past" : ""}" data-id="${e.id}">
+        <div class="name">${escapeHtml(e.name)}</div>
+        <div class="date">${formatDate(e.date)}</div>
+        <div class="${bigClass}">${big}</div>
+        <div class="label"><span>${label}</span><button class="remove" data-remove="${e.id}">Remove</button></div>
+      </div>`;
+  }).join("");
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+document.addEventListener("click", (e) => {
+  const id = e.target.getAttribute && e.target.getAttribute("data-remove");
+  if (id) {
+    events = events.filter(x => x.id !== id);
+    saveEvents(events);
+    render();
+  }
+});
+
+const sheet = document.getElementById("sheet");
+const form = document.getElementById("form");
+const nameEl = document.getElementById("eventName");
+const dateEl = document.getElementById("eventDate");
+const errEl = document.getElementById("err");
+
+document.getElementById("addBtn").addEventListener("click", () => {
+  nameEl.value = "";
+  dateEl.value = "";
+  errEl.textContent = "";
+  if (typeof sheet.showModal === "function") sheet.showModal();
+  else sheet.setAttribute("open", "");
+  setTimeout(() => nameEl.focus(), 50);
+});
+document.getElementById("cancelBtn").addEventListener("click", () => {
+  sheet.close();
+});
+form.addEventListener("submit", (ev) => {
+  const name = nameEl.value.trim();
+  const date = dateEl.value;
+  if (!name) { ev.preventDefault(); errEl.textContent = "Give it a name first."; return; }
+  if (!date) { ev.preventDefault(); errEl.textContent = "Pick a date."; return; }
+  events.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 6), name, date });
+  saveEvents(events);
+  render();
+});
+
+nameEl.addEventListener("input", () => { if (errEl.textContent) errEl.textContent = ""; });
+dateEl.addEventListener("input", () => { if (errEl.textContent) errEl.textContent = ""; });
+
+// Seed with examples on first visit
+if (events.length === 0 && !localStorage.getItem(STORAGE_KEY + ":seeded")) {
+  const today = new Date();
+  const in30 = new Date(today); in30.setDate(in30.getDate() + 47);
+  const in120 = new Date(today); in120.setDate(in120.getDate() + 128);
+  const iso = d => d.toISOString().slice(0, 10);
+  events = [
+    { id: "demo1", name: "Semester end", date: iso(in30) },
+    { id: "demo2", name: "New Year", date: iso(new Date(today.getFullYear() + (today.getMonth() === 11 && today.getDate() > 15 ? 1 : 1), 0, 1)) },
+    { id: "demo3", name: "Birthday", date: iso(in120) },
+  ];
+  saveEvents(events);
+  try { localStorage.setItem(STORAGE_KEY + ":seeded", "1"); } catch {}
+}
+
+render();
+// Re-render each minute in case midnight ticks over while the app stays open
+setInterval(render, 60000);
+
+// Register service worker so Chrome offers "Install app"
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
